@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Image Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #imageContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .image-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Live Images from WebSocket</h2>
+    <div id="imageContainer"></div>
+
+    <script>
+        const host = "127.0.0.1";
+        const port = 8282;
+        const socket = new WebSocket(`ws://${host}:${port}/ws/faces/`);
+
+        socket.onopen = () => {
+            console.log("Connected to WebSocket server.");
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data); // Expecting { "image": "base64_string" }
+                if (data.image_url) {
+                    displayImage(`http://${host}:${port}${data.image_url}`);
+                }
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
+            }
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket Error:", error);
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket connection closed.");
+        };
+
+        function displayImage(image_url) {
+            const img = document.createElement("img");
+            img.src = image_url;
+
+            const div = document.createElement("div");
+            div.classList.add("image-box");
+            div.appendChild(img);
+
+            document.getElementById("imageContainer").prepend(div);
+        };
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+
+version: '3.8'
+services:
+  db:
+    container_name: postgres
+    image: postgres:17
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${SQL_USER}
+      - POSTGRES_PASSWORD=${SQL_PASSWORD}
+      - POSTGRES_DB=${SQL_DATABASE}
+    ports:
+      - "5432:5432"
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app/apps
+    command: python manage.py runserver 0.0.0.0:8282
+    volumes:
+      - ./apps:/app/apps
+      - ./media:/app/media
+    env_file:
+      - .env
+    ports:
+      - "8282:8282"
+    depends_on:
+      - db
+      - redis
+    links:
+      - db
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  celery_worker:
+    ports: []
+    build: .
+    working_dir: /app/apps
+    restart: always
+    command: ["celery", "-A", "face_vision.celery", "worker", "--loglevel=info"]
+    volumes:
+      - ./apps:/app/apps
+      - ./media:/app/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  pg_data:
